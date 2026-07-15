@@ -1,7 +1,7 @@
 # AI System Design Interview Prep — Tailored to Patrick's Background
 
-> 说明:面试是英文的,所以题目和答题要点用英文写,方便直接练习口述。
-> 每道题都标注了「你的素材」—— 你实际做过的项目,答题时引用真实经历远比背模板加分。
+> Note: my interviews are in English, so the questions and talking points are written in English for direct spoken practice.
+> Every question is tagged with "My material" — projects I actually built. Citing real experience scores far better than reciting templates.
 
 ---
 
@@ -24,7 +24,7 @@ latency p99, refusal rate).
 
 ## Q1. Design a self-hosted LLM inference service for internal company tools
 
-**你的素材:** Fulgent AI server cluster (Llama 3, Whisper, Dec 2024–now)。这是你最强的题,主动把面试官往这引。
+**My material:** Fulgent AI server cluster (Llama 3, Whisper, Dec 2024–now). This is my strongest question — steer the interviewer here.
 
 - Clarify: which models/sizes? concurrent users? latency-sensitive (chat) vs batch (OCR)? data privacy
   (PHI → why self-host in the first place — your real reason at Fulgent).
@@ -39,7 +39,7 @@ latency p99, refusal rate).
 
 ## Q2. Design a multi-agent orchestration platform
 
-**你的素材:** NodeOrchestrator + ShipFlow。基本上是你的主场。
+**My material:** NodeOrchestrator + ShipFlow. This is basically my home turf.
 
 - Clarify: agents collaborating on one task vs independent? human oversight required? long-running?
 - Core components: agent runtime loop (LLM call → tool call → observe → repeat), shared event log,
@@ -70,13 +70,13 @@ I built the same primitives **before** picking up LangGraph — so I understand 
 
 **Layer difference:** LangGraph is the orchestration *library*; NodeOrchestrator is a *platform* that wraps the same engine plus auth, multi-user, sandboxing, and UI. Line to use: *"I hit the problems and built the primitives, so LangGraph looks familiar — I know why it's shaped that way and where I'd extend it."* (I also have a working LangGraph self-RAG loop in my healthcare-RAG project.)
 
-📘 原理层(Pregel/channels/super-step、embedding 真实相似度数字、HNSW 参数、vector-DB 磁盘布局)→ [`llm-fundamentals.md`](llm-fundamentals.md)
+📘 Fundamentals layer (Pregel/channels/super-step, real embedding similarity numbers, HNSW parameters, vector-DB disk layout) → [`llm-fundamentals.md`](llm-fundamentals.md)
 
 ---
 
 ## Q3. Design a document-AI ingestion pipeline (OCR + auto-fill)
 
-**你的素材:** Fulgent image clipper for order-intake PDFs。
+**My material:** Fulgent image clipper for order-intake PDFs.
 
 - Clarify: typed vs handwritten? volume? what happens on low confidence?
 - Pipeline: upload → preprocess (clip regions) → OCR/VLM → schema-constrained extraction (JSON
@@ -88,7 +88,7 @@ I built the same primitives **before** picking up LangGraph — so I understand 
 
 ## Q4. Design a notification system that delivers 10M+ results
 
-**你的素材:** 你独立做的 result-notification system(2 周上线,替换了 $4/test 的外部供应商)。经典题 + 你有完整实战。
+**My material:** the result-notification system I built solo (live in 2 weeks, replaced a $4/test external vendor). A classic question — and I have complete hands-on experience with it.
 
 - Clarify: channels (email/SMS/webhook)? ordering? exactly-once? compliance (PHI in payload?).
 - Architecture: producer → outbox table (transactional) → queue → channel workers → provider
@@ -102,7 +102,7 @@ I built the same primitives **before** picking up LangGraph — so I understand 
 
 ## Q5. Design an LLM evaluation / benchmark system
 
-**你的素材:** llmqualitybenchmark(测 ShipFlow 相对 baseline 的提升)。2026 年很热门的题。
+**My material:** llmqualitybenchmark (measures ShipFlow's improvement over the baseline). A very hot question in 2026.
 
 - Clarify: eval what — model quality, prompt regressions, or agent workflows?
 - Components: task definitions (YAML), runners, rubric-based scoring (LLM-as-judge + human
@@ -113,7 +113,7 @@ I built the same primitives **before** picking up LangGraph — so I understand 
 
 ## Q6. Design a chat-ops AI coding agent (Slack/Discord bot that writes code)
 
-**你的素材:** DevBot。
+**My material:** DevBot.
 
 - Clarify: who can trigger? what repos? how much autonomy?
 - Architecture: chat gateway → intent router (small LLM routes to the right backend/CLI — you used
@@ -126,7 +126,7 @@ I built the same primitives **before** picking up LangGraph — so I understand 
 
 ## Q7. Design a RAG system (knowledge-base Q&A)
 
-**你的素材:** 没有直接项目,但可以连接 TAMU-CC 的 IT knowledge base 经历 + LLM 经验。这题必考,要熟练。
+**My material:** no direct project, but I can connect my TAMU-CC IT knowledge base experience + my LLM experience. This question is guaranteed to come up — I need to be fluent in it.
 
 - Pipeline: ingest → chunk (by structure, 300-800 tokens, overlap) → embed → vector DB (+ keyword
   hybrid BM25) → retrieve top-k → rerank → generate with citations.
@@ -135,12 +135,12 @@ I built the same primitives **before** picking up LangGraph — so I understand 
   accuracy).
 - Follow-ups: multi-tenant isolation (per-tenant namespaces/filters); when RAG vs fine-tuning
   (RAG for facts/freshness, FT for style/format).
-- **必说关键词 (2026):** hybrid search (dense+BM25, RRF), cross-encoder rerank, **contextual retrieval** (Anthropic), context compression, **grounding + citation**, **RAGAS** (faithfulness / context-recall), agentic RAG (retrieval as a tool).
-- 📘 **完整 45-min deep-dive → [`rag-deep-dive.md`](rag-deep-dive.md);学习路径 → [`rag-learning-path.md`](rag-learning-path.md)。** 这是你目前最该补的一题。
+- **Must-say keywords (2026):** hybrid search (dense+BM25, RRF), cross-encoder rerank, **contextual retrieval** (Anthropic), context compression, **grounding + citation**, **RAGAS** (faithfulness / context-recall), agentic RAG (retrieval as a tool).
+- 📘 **Full 45-min deep-dive → [`rag-deep-dive.md`](rag-deep-dive.md); learning path → [`rag-learning-path.md`](rag-learning-path.md).** This is the question I most need to shore up right now.
 
 ## Q8. Design a high-throughput ordering/testing platform (classic, non-AI)
 
-**你的素材:** BTS 平台本身。当面试官想考传统 system design 时用。
+**My material:** the BTS platform itself. Use this when the interviewer wants to test classic system design.
 
 - 150K/day peak ≈ 2-5 QPS average but bursty (morning registration spikes) — point out that
   **burstiness, not average, drives design**.
@@ -163,6 +163,6 @@ I built the same primitives **before** picking up LangGraph — so I understand 
 
 ## Practice plan
 
-- 一周 2-3 题,每题:10 分钟读题领会 → 35 分钟白板口述(录音)→ 对照本文档复盘。
-- 先练 Q1/Q2/Q4(你的主场),再练 Q7 RAG(必考但你没实战),最后混合抽题。
-- 口述时强制自己走完 6 步框架,不要直接跳进架构图。
+- 2-3 questions per week. Each one: 10 minutes to read and digest the prompt → 35 minutes of spoken whiteboard walkthrough (record it) → review against this document afterward.
+- Practice Q1/Q2/Q4 first (my home turf), then Q7 RAG (guaranteed to come up but I have no hands-on project yet), and finally draw questions at random from the full mix.
+- While speaking, force myself through the full 6-step framework — never jump straight into the architecture diagram.
