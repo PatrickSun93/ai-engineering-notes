@@ -23,6 +23,35 @@
 
 ---
 
+## 0.5 How LLMs Are Actually Built
+
+A common mental model — *"get the data, backpropagate to generate a big NN, save the weights"* — is 80% right about **one stage**. Two fixes first: **backprop doesn't generate the network** (the Transformer's shape is designed first and initialized with random weights; backprop only turns the existing knobs), and **"get the data" undersells the hardest half**. Building an LLM is three jobs:
+
+### Stage 1 — Data engineering (the unglamorous half)
+- Collect **trillions of tokens** (Llama 3 pretrained on **~15T tokens**)
+- Filter quality, deduplicate, strip toxic/PII content, and **tune the mixture** (code vs web vs books — the ratio measurably changes model ability)
+- Train a **tokenizer** (BPE), tokenize everything, pack into fixed-length sequences (e.g., 8k tokens)
+
+### Stage 2 — Pretraining (the loop everyone pictures)
+```
+batch of sequences → forward pass → cross-entropy loss ("guess the next token")
+→ backprop all gradients → Adam update → repeat for months on thousands of GPUs
+```
+- **Teacher forcing** ⭐: during training the model does **not** generate word by word. The causal mask lets **one forward pass score the next-token prediction at every position simultaneously** — an 8k-token sequence yields 8k training signals in one shot. Generation is sequential only at *inference*.
+- Scale: frontier runs use **thousands of GPUs for months** (Llama-3-405B ≈ 16k H100s).
+- **"Save the weights" = constant checkpointing, not a final save** — at 10k-GPU scale something fails every few hours, so you checkpoint (405B × 2 bytes ≈ **810GB per checkpoint**) and resume. And recall Adam's 8 B/param: 405B params ≈ **3.2TB of optimizer state alone** — that's why it takes thousands of GPUs: memory as much as compute.
+- Output: a **base model** — a brilliant *document completer* that will happily continue your question with more questions. Not yet an assistant.
+
+### Stage 3 — Post-training (what makes it usable)
+- **SFT**: fine-tune on "instruction → good response" examples → it learns the assistant format
+- **Preference tuning (RLHF / DPO)**: humans rank answer pairs → the model shifts toward helpful/harmless behavior
+- (Frontier models add RL on verifiable tasks for reasoning)
+- Same loop as Stage 2 — different data, far fewer tokens. **My QLoRA run was a miniature Stage 3** with 99.5% of the knobs frozen.
+
+> 🎤 *"Building an LLM is three jobs. First, data engineering — collect and clean trillions of tokens and tune the mixture; that's half the battle. Second, pretraining — define a Transformer, initialize it randomly, and run next-token prediction with backprop and Adam across thousands of GPUs for months, checkpointing constantly because hardware fails; teacher forcing means one forward pass trains every position at once. That yields a base model — a document completer. Third, post-training — SFT plus preference tuning like RLHF or DPO — turns the completer into an assistant. My QLoRA project was a miniature stage three: same loop, 99.5% of the weights frozen."*
+
+---
+
 ## 1. Embeddings: Meaning → Geometry
 
 **Principle:** an embedding model maps text to a point in high-dimensional space, trained so that **semantic similarity becomes geometric proximity**. "Search by meaning" becomes "find the nearest points" (kNN), measured by cosine / dot product.
