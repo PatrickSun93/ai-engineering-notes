@@ -52,6 +52,41 @@ batch of sequences → forward pass → cross-entropy loss ("guess the next toke
 
 ---
 
+## 0.6 What "7B / 30B" Means
+
+**7B / 30B = the number of learnable parameters (weights) in the network, in billions.** That single number drives memory, speed, cost, and capability.
+
+### What exactly is counted
+Every matrix in the model is made of parameters: the **embedding table** (vocab × dims: 32,000 × 4096 ≈ 131M), each layer's **Q/K/V/O matrices** (4 × 4096² ≈ 67M per layer), and each layer's **FFN matrices** (≈ 135M per layer).
+Rough math for Llama-7B: (67M + 135M) × 32 layers + embeddings ≈ **~6.7B → marketed as "7B."** The weights file *is* the model — everything it "knows" lives in those numbers.
+
+### Three consequences
+**① Memory = params × bytes per param:**
+```
+7B:  fp16 = 14 GB   |  4-bit ≈ 3.5 GB     ← runs on a laptop
+30B: fp16 = 60 GB   |  4-bit ≈ 15 GB      ← one big GPU, or heavy quantization
+70B: fp16 = 140 GB  |  4-bit ≈ 35 GB      ← multi-GPU (or one 48GB card via QLoRA)
+```
+Rule of thumb: **GB ≈ params × 2 (fp16); ÷4 for 4-bit.**
+
+**② Speed: every generated token touches every weight** — ~2 × params FLOPs per token. A 30B model is ~4× slower and pricier per token than a 7B on the same hardware; that's the latency/cost lever in system design.
+
+**③ Capability: bigger = smarter, with diminishing returns.** My production example: **handwriting OCR capped at 55% because the model was only 7B** — a size-vs-accuracy trade-off hit in the real world.
+
+### The size ladder (2026 mental map)
+| Size | Where it lives | Typical use |
+|---|---|---|
+| 0.5–3B | phone / laptop CPU | edge, routing, format tasks (my **1B QLoRA** project) |
+| **7–9B** | one consumer GPU / a Mac | the self-hosting workhorse (my Fulgent cluster) |
+| 30–70B | serious GPU(s) or heavy quant | quality local deployments |
+| 100B+ / frontier | API for most people | Claude/GPT class |
+
+Caveat: **MoE (mixture-of-experts)** models quote two numbers — e.g., "total 100B+, active ~10B per token." Only the *active* parameters run per token, so they're cheaper than the headline suggests.
+
+> 🎤 *"7B means seven billion learnable parameters — the sum of all the embedding, attention, and FFN matrices. That number drives everything: memory is params times bytes-per-param — 14GB in fp16, ~3.5GB at 4-bit, which is what my Mac runs; speed scales inversely since every token touches every weight; and capability grows with diminishing returns — our 7B handwriting OCR capping at 55% was exactly that trade-off in production."*
+
+---
+
 ## 1. Embeddings: Meaning → Geometry
 
 **Principle:** an embedding model maps text to a point in high-dimensional space, trained so that **semantic similarity becomes geometric proximity**. "Search by meaning" becomes "find the nearest points" (kNN), measured by cosine / dot product.
