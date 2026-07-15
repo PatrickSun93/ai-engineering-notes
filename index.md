@@ -13,6 +13,7 @@ Companion runnable projects:
 | **[Flashcards](flashcards.md)** ⭐ | Every number, formula, one-line definition, follow-up chain, and spoken answer | The one page to review before an interview |
 | [LLM Fundamentals](llm-fundamentals.md) | The whole picture → embeddings → ANN/HNSW → vector-DB storage → LangGraph internals → LoRA/QLoRA → minimal math | Systematic deep read |
 | [RAG Deep-Dive](rag-deep-dive.md) | A 45-minute whiteboard-grade RAG design: chunking → hybrid retrieval → rerank → grounding → eval → agentic RAG | The most common design question |
+| [Serving & Safety](serving-and-safety.md) | Inference optimization (continuous batching, PagedAttention, prompt caching, speculative decoding) + prompt injection & agent security | "How do you serve/secure this?" |
 | [RAG Learning Path](rag-learning-path.md) | Staged path from zero to a shipped RAG project | Hands-on checklist |
 | [AI System Design](ai-system-design.md) | 8 AI system-design questions + a 6-step answering framework + LangGraph vs. my own orchestrator | Whiteboard prep |
 

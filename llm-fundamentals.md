@@ -264,6 +264,34 @@ Block-wise scaling: one absmax per 64 weights (an outlier only pollutes its own 
 
 ---
 
+## 6.6 Structured Output & Tool-Calling (how it actually works)
+
+Everyone *uses* function calling; the interview question is *"how does the model reliably return valid JSON?"*
+
+- **The mechanism is not "the model tries hard."** You give the model a **JSON schema** (the tool signature); at decode time, **constrained/guided decoding** masks the next-token probabilities to only tokens that keep the output grammar-valid (a finite-state machine / grammar over the schema). Illegal tokens get probability 0 — so the JSON is **structurally guaranteed**, not hoped for. (Tools: Outlines, `response_format`/JSON mode, llama.cpp GBNF grammars, vLLM guided decoding.)
+- **Tool-calling = structured output + a loop.** The model emits `{"tool": "...", "args": {...}}`; **your code executes it** and feeds the result back into context; the model continues. The LLM never runs anything — it just *completes a JSON blob your runtime dispatches*. (This is exactly the "using a tool = completing JSON your code executes" point from §0.)
+- **My angle:** my QLoRA project *taught* a model to emit strict clinical-order JSON (exact match 13%→100%) — that's the fine-tuning route to reliability; constrained decoding is the inference-time route; in production you often use both (a tuned model *and* a grammar).
+- ⚠️ Trade-off worth naming: over-constraining can hurt quality (the model can't "think" in free text first) — mitigate with a reasoning field before the structured fields, or a two-step "reason then format."
+
+> 🎤 *"Reliable JSON isn't the model trying harder — it's constrained decoding: the schema becomes a grammar, and at each step illegal tokens are masked to zero probability, so the output is structurally guaranteed valid. Tool-calling is that plus a loop — the model emits a JSON call, my runtime executes it and feeds the result back. I've also done the fine-tuning route: my QLoRA project taught a 1B model strict clinical-order JSON, 13% to 100% exact match."*
+
+---
+
+## 6.7 LLM-as-Judge (the eval follow-up nobody prepares)
+
+When I say "I evaluate agents with rubric scoring," the follow-up is *"how do you know the judge is right?"* — an LLM grading LLM output has real biases:
+
+- **Position bias:** it favors whichever answer came first (or second) regardless of quality. → **Mitigate: run both orderings (pairwise swap) and average.**
+- **Self-preference bias:** a model rates *its own* family's outputs higher. → Use a different model as judge, or calibrate.
+- **Verbosity / sycophancy bias:** longer or more agreeable answers score higher unfairly.
+- **Calibration:** the only real check — **spot-check the judge against human labels on a sample**; if judge≈human, trust it at scale; if not, fix the rubric.
+- **Good practice:** pairwise comparison (A vs B) is more reliable than absolute 1–10 scoring; give the judge an explicit rubric and ask for a reason before the score; keep a small human-labeled golden set as ground truth.
+- **My angle:** my ShipFlow harness uses rubric scoring + cost/latency tracking; for RAG, RAGAS-style faithfulness is a *grounding* check that sidesteps some judge bias by comparing answer-to-context rather than answer-to-taste.
+
+> 🎤 *"LLM-as-judge is useful but biased — position bias, self-preference, verbosity bias. I mitigate with pairwise comparisons and order-swapping, an explicit rubric with a reason before the score, and — the real safeguard — calibrating the judge against human labels on a sample. If the judge tracks humans, I trust it at scale; otherwise I fix the rubric. For grounding specifically I prefer faithfulness checks that compare the answer to the retrieved context, not to taste."*
+
+---
+
 ## 7. Minimal Math (zero prerequisites)
 
 > The bar for an AI application engineer: intuition + whiteboard fluency, **not proofs**. You do NOT need: hand-derived backprop, convex optimization, measure theory.

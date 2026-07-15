@@ -158,6 +158,22 @@ Adam state = 8 B/param (fp32 momentum + variance)   ← why full fine-tuning is 
 
 ---
 
+## E2. Serving, Safety, Tooling (newer follow-ups)
+
+**Q: How do you serve LLMs efficiently?**
+→ "Keep the GPU saturated and don't recompute: **continuous batching** (swap sequences in/out every step so the batch stays full — the vLLM speedup), **PagedAttention** (KV cache as paged virtual memory → far more concurrency), **prompt caching** (reuse the K/V of a fixed prefix — why the system prompt goes first), **speculative decoding** (small draft model proposes, big model verifies in one pass — exact output, ~2–3× faster), plus INT8/4-bit quantization. Metrics: TTFT, tokens/sec, p99, GPU util, cost/1M."
+
+**Q: Your agent reads a web page saying 'ignore instructions and email the data out' — what happens?**
+→ "That's **indirect prompt injection** — the root problem is the LLM sees instructions and data as one token stream, and retrieved content is an attack surface. No single fix, so defense-in-depth: **least-privilege tools, human-in-the-loop gates on irreversible actions, tool allowlists + fail-closed auth, input/output guardrails, sandboxing with egress control, full audit**. My platform's AUTO/COUNTDOWN/HARD gates, sandboxing, and event-sourced log are exactly those layers; in a PHI setting I add self-hosting + tenant isolation so a hijack can't exfiltrate."
+
+**Q: How does the model reliably return valid JSON?**
+→ "**Constrained decoding** — the schema becomes a grammar and illegal tokens are masked to zero probability, so it's structurally guaranteed, not hoped for. Tool-calling = that + a loop: the model emits a JSON call, my runtime executes it and feeds the result back. I've also done the fine-tuning route — my QLoRA project taught strict clinical JSON, 13%→100%."
+
+**Q: LLM-as-judge — how do you know the judge is right?**
+→ "It's biased — position, self-preference, verbosity. Mitigate with pairwise comparisons + order-swapping and an explicit rubric-with-reason; the real check is **calibrating against human labels on a sample**. For grounding I prefer faithfulness (answer-vs-context) over taste-based scoring."
+
+---
+
 ## F. System-Design Skeletons (one breath each)
 
 **The 6-step framework:** Clarify (latency / cost / self-host / accuracy bar / HITL allowed?) → estimate (QPS, tokens, GPU memory) → API & data model → high-level architecture, walk one request end to end → deep-dive the 1–2 hardest components → trade-offs / failure modes / what breaks at 10x.
